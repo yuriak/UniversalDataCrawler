@@ -246,6 +246,7 @@ public class MainController implements IController {
 				for (int i = 0; i < file.length; i++) {
 					if (file[i]!=null&&file[i].exists()&&file[i].canRead()) {
 						FileUtils.copyFileToDirectory(file[i], new File("WebRoot/data/"+pluginID));
+						FileUtils.moveFileToDirectory(file[i], new File("data/"+pluginID), true);
 					}
 				}
 			}
