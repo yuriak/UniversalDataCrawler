@@ -101,6 +101,15 @@ public class TFIDFMeasure {
 				
 		}
 		
+	    public String[] getTerms()
+	    {
+	    	String []terms = new String [_numTerms];
+	    	for (int i = 0; i < terms.length; i++)
+				terms[i] = (String) _terms.get(i);
+	    	return terms;
+	    }
+
+		
 		private float Log(float num)
 		{
 			return (float) Math.log(num) ;//log2

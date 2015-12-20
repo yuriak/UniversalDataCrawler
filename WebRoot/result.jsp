@@ -8,7 +8,7 @@ String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
 String fileString="";
 if(!request.getParameter("file").isEmpty()&&request.getParameter("file")!=null){
-fileString=FileUtils.readFileToString(new File("WebRoot/data/"+request.getParameter("file")),"utf-8");
+fileString=FileUtils.readFileToString(new File("WebRoot/data"+request.getParameter("file")),"utf-8");
 }
 %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"

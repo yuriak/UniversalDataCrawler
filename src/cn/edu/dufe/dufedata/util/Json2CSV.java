@@ -19,6 +19,7 @@ public class Json2CSV {
 		}else {
 			System.out.println("not a json file");
 		}
+		//CDL是org.json提供的类，专门用于转换
 		return CDL.toString(array);
 	}
 	

@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
@@ -22,7 +23,6 @@ import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import org.apache.bcel.util.ClassPath;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -34,21 +34,16 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.webapp.JarScanner;
 import org.json.JSONObject;
 
-import com.simontuffs.onejar.JarClassLoader;
-
 import cn.edu.dufe.dufedata.common.CommonConfig;
 import cn.edu.dufe.dufedata.plugin.IPlugin;
 import cn.edu.dufe.dufedata.plugin.Plugin;
 
 public class PluginLoader  {
-	public static ArrayList<Plugin> loadPlugins(){
-		try {
-			
+	public static ArrayList<Plugin> loadPlugins() throws Exception{
 		
 		File[] pluginFolders;
 		ArrayList<Plugin> plugins=new ArrayList<>();
 		pluginFolders=FileUtils.getFile(CommonConfig.PLUGIN_FOLDER).listFiles(new FileFilter() {
-			
 			@Override
 			public boolean accept(File pathname) {
 				if (pathname.isDirectory()) {
@@ -57,20 +52,22 @@ public class PluginLoader  {
 				return false;
 			}
 		});
-		
+		//遍历每一个目录
 		for (int i = 0; i < pluginFolders.length; i++) {
+			//获取插件信息
 			File pluginInfoFile=FileUtils.getFile(new File(pluginFolders[i].getAbsolutePath()+"/plugin.info"));
 			String pluginID="";
 			String pluginVersion="";
 			String pluginAuthor="";
 			String info=FileUtils.readFileToString(pluginInfoFile,"utf-8");
+			//赋值
 			JSONObject infoObject=new JSONObject(info);
 			pluginID=infoObject.getString("id");
 			pluginVersion=infoObject.getString("version");
 			pluginAuthor=infoObject.getString("author");
 			
 			File libFolder=null;
-			
+			//库目录
 			File[] libFolders=pluginFolders[i].listFiles(new FileFilter() {
 				@Override
 				public boolean accept(File pathname) {
@@ -84,7 +81,7 @@ public class PluginLoader  {
 			if (libFolders!=null&&libFolders.length>0) {
 				libFolder=libFolders[0];
 			}
-			
+			//加载库文件
 			File[] libFiles=null;
 			if (libFolder!=null) {
 				libFiles=libFolder.listFiles(new FileFilter() {
@@ -109,12 +106,14 @@ public class PluginLoader  {
 					while (entries.hasMoreElements()) {
 						JarEntry jarEntry = (JarEntry) entries.nextElement();
 						if (jarEntry.getName().endsWith(".class")) {
+							//将类名转换后载入类
 							String fullClassName=jarEntry.getName().replaceAll("/", ".").split(".class")[0];
 							classLoader.loadClass(fullClassName);
 						}
 					}
 				}
 			}
+			//载入插件
 			File pluginFile=pluginFolders[i].listFiles(new FileFilter() {
 				@Override
 				public boolean accept(File pathname) {
@@ -129,11 +128,14 @@ public class PluginLoader  {
 			URLClassLoader pluginLoader=new URLClassLoader(new URL[]{pluginURL});
 			Enumeration<JarEntry> entries=pluginJarfile.entries();
 			Plugin plugin=null;
+			
 			while (entries.hasMoreElements()) {
 				JarEntry jarEntry = (JarEntry) entries.nextElement();
 				if (jarEntry.getName().endsWith(".class")) {
 					String classFullName = jarEntry.getName().replaceAll("/", ".").split(".class")[0];
+					//载入插件的类文件
 					Class<?> myclass = pluginLoader.loadClass(classFullName);
+					//如果这个类文件是Plugin类的子类，就实例化它
 					if (Plugin.class.isAssignableFrom(myclass)) {
 						Constructor<?> constructor=myclass.getDeclaredConstructor(String.class,String.class,String.class);
 						constructor.setAccessible(true);
@@ -155,72 +157,15 @@ public class PluginLoader  {
 			}
 			plugins.add(plugin);
 		}
-		return plugins;
-		
-		
-		} catch (Exception e) {
-			e.printStackTrace();
-			// TODO: handle exception
+		//去重
+		ArrayList<Plugin> resultPlugins=new ArrayList<>();
+		for (Plugin plugin : plugins) {
+			if (!resultPlugins.contains(plugin)) {
+				//
+				resultPlugins.add(plugin);
+			}
 		}
-		return null;
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-//		File[] jarFiles;
-//		ArrayList<Plugin> pluginList;
-//		pluginList=new ArrayList<Plugin>();
-//		
-//		jarFiles=new File(CommonConfig.PLUGIN_DIR).listFiles();
-//		for (File file : jarFiles) {
-//			if (!file.getAbsolutePath().endsWith(".jar")) {
-//				continue;
-//			}
-
-//			try {
-//				URL url=file.toURI().toURL();
-//				JarFile jar = new JarFile(file.getAbsolutePath());
-////				String info=IOUtils.toString(jar.getInputStream(jar.getEntry("plugin.info")),"UTF-8");
-//				Manifest manifest=jar.getManifest();
-//				Enumeration<JarEntry> entries=jar.entries();
-//				JarEntry jarEntry;
-//				URLClassLoader classLoader=new URLClassLoader(new URL[]{url});
-//				while (entries.hasMoreElements()) {
-//					jarEntry = (JarEntry) entries.nextElement();
-//					if (jarEntry.getName().endsWith("plugin.info")) {
-						
-//					}
-//				}
-//				entries=jar.entries();
-//				while (entries.hasMoreElements()) {
-//					jarEntry = (JarEntry) entries.nextElement();
-//					if (jarEntry.getName().endsWith(".class")) {
-//						String classFullName = jarEntry.getName();
-//						String className = classFullName.substring(0,classFullName.length()-6).replace("/", ".");
-//						Class<?> myclass = classLoader.loadClass(className);
-//						if (Plugin.class.isAssignableFrom(myclass)) {
-//							Constructor<?> constructor=myclass.getDeclaredConstructor(String.class,String.class,String.class);
-//							constructor.setAccessible(true);
-//							Plugin plugin=(Plugin) constructor.newInstance(pluginID,pluginVersion,pluginAuthor);
-//							pluginList.add(plugin);
-//						}
-//					}
-//			}
-//			}catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				
-//				e.printStackTrace();
-//			}
-//		}
-//		return pluginList;
+		return plugins;
 	}
 	
 }

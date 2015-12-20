@@ -81,9 +81,11 @@ public abstract class Plugin implements IPlugin {
 	}
 	
 	@Override
-	public abstract void crawl();
+	public abstract void crawl() throws Exception;
 	@Override
-	public abstract void init(String[] args);
-	public abstract File[] getResultFiles();
-	public abstract File[] getTFIDFFiles();
+	public abstract void init(String[] args) throws Exception;
+	@Override
+	public abstract void stop() throws Exception;
+	
+	public abstract File[] getResultFiles() throws Exception;
 }

@@ -9,8 +9,13 @@
 <%
 String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+
+String filePath="";
+if(request.getParameter("path")!=null&&request.getParameter("path").length()>0){
+	filePath=request.getParameter("path");
+}
 MainController controller=MainController.getInstance();
-File[] files=controller.listDownloadFiles();
+File[] files=controller.listDownloadFiles(filePath);
 MyFileUtils.sortByDate(files);
 %>
 
@@ -71,6 +76,7 @@ MyFileUtils.sortByDate(files);
 								<th>Plugin</th>
 								<th>FileName</th>
 								<th>Size</th>
+								<th>Type</th>
 								<th>LastModify</th>
 								<th>Operations</th>
 							</tr>
@@ -78,15 +84,27 @@ MyFileUtils.sortByDate(files);
 						<tbody>
 						<%
 						for(File file:files){
+						int fileType=MyFileUtils.getFileType(file);
 						 %>
 						<tr>
 						<td><%=file.getName().split("_")[0] %></td>
 						<td><%=file.getName() %></td>
 						<td><%=MyFileUtils.calculateSize(FileUtils.sizeOf(file)) %></td>
+						<td><%=fileType==0?"File":"Dir" %></td>
 						<td><%=TimeUtil.convertLongToDateString(String.valueOf(file.lastModified()/1000)) %></td>
-						<td><a href="data/<%=file.getName() %>">Download</a> | 
-						<a  href="result.jsp?file=<%=file.getName() %>" target="_blank">Review</a> | 
-						<input type="button" class="delete btn btn-danger" id="<%=file.getName() %>" value="delete"></td>
+						<td>
+						<%if(fileType==0||fileType==-1){ %> 
+						<a href="data<%=filePath+"/"+file.getName() %>">Download</a> |
+						<%}else{ %>
+						<a href="files.jsp?path=<%=filePath+"/"+file.getName() %>">Open</a> |
+						<%} %>
+						<%if(fileType==0){ %> 
+						<a href="result.jsp?file=<%=filePath+"/"+file.getName() %>" target="_blank">Review</a> |
+						<%} %>
+						<%if(fileType==0){ %> 
+						<input type="button" class="delete btn btn-danger" id="<%=filePath+"/"+file.getName() %>" value="delete">
+						<%} %>
+						</td>
 						</tr>
 						<%
 						}

@@ -27,13 +27,10 @@ import org.apache.commons.io.IOUtils;
  * @email chenweionline@hotmail.com
  */
 public class WebUIPrintStream extends PrintStream {
-    
-    private ArrayBlockingQueue<String> logQueue;
-    private StringBuffer sb = new StringBuffer();
+    //日志队列
     private Console console;
     public WebUIPrintStream(OutputStream out){
         super(out);
-        this.logQueue = logQueue;
         if (System.console()!=null) {
 			console=System.console();
 		}
@@ -47,9 +44,11 @@ public class WebUIPrintStream extends PrintStream {
      */
     @Override
     public void write(byte[] buf, int off, int len){
-        String message = new String(buf, off, len); 
+        String message = new String(buf, off, len);
+        //在输出的时候讲信息发送给web日志队列和日志文件
         LogQueueUtil.getInstance().addLog(message);
         LogFileUtil.getInstance().addLog(message);
+        //同时在系统console输出
         if (console!=null) {
 			console.writer().write(message);
 			console.writer().flush();

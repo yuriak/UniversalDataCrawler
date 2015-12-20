@@ -32,6 +32,7 @@ public class Launcher {
 					startServer(54321);
 				}
 			}else if (!args[0].isEmpty()&&args[0].equals("-startplugin")) {
+				//启动插件，将剩下的参数发给MainController
 				startPlugin(args[1], shrinkArgs(shrinkArgs(args)));
 			}
 		}
@@ -52,7 +53,7 @@ public class Launcher {
 		MainController controller=MainController.getInstance();
 		controller.crawl(pluginName, args);
 	}
-	
+	//缩短参数
 	private static String[] shrinkArgs(String[] args){
 		String[] resultArg=new String[args.length-1];
 			for (int i = 0; i < resultArg.length; i++) {

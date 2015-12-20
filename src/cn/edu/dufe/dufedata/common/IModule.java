@@ -2,5 +2,5 @@ package cn.edu.dufe.dufedata.common;
 
 
 public interface IModule{
-	public void init(String[] args);
+	public void init(String[] args) throws Exception;
 }

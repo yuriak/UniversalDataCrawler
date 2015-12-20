@@ -35,22 +35,23 @@ public class MainController implements IController {
 	}
 	
 	@Override
-	public void init(String[] args) {
-//		System.setOut(new WebUIPrintStream(System.out));
+	public void init(String[] args) throws Exception{
+		//截获系统输出流
 		uiPrintStream=new WebUIPrintStream(System.out);
+		//将输出流设置给WebUIPrintStream
 		System.setOut(uiPrintStream);
 		System.setErr(uiPrintStream);
 		if (System.console()!=null) {
-			System.console().writer().write("inited");
+			System.console().writer().write("DataCrawler Inited");
 			System.console().writer().flush();
 		}
+		//线程池
 		threadMap=new HashMap<>();
 		loadPlugins();
 	}
 	@Override
-	public void loadPlugins() {
+	public void loadPlugins() throws Exception {
 		plugins=PluginLoader.loadPlugins();
-		
 	}
 	
 //	public static void main(String[] args) {
@@ -61,36 +62,47 @@ public class MainController implements IController {
 //		files[1]=new File("data/hxTfidf2015_11_27_15_31_17.csv");
 //		controller.saveFileToWebRoot("court", files);
 //	}
-
+	//通过plugin对象启动plugin
 	@Override
-	public void crawl(final Plugin plugin,final String[] args) {
+	public void crawl(final Plugin plugin,final String[] args) throws Exception {
 		if (plugin.getPluginStatus()==0) {
 			Thread thread=new Thread(new Runnable() {
 				
 				@Override
 				public void run() {
 					// TODO Auto-generated method stub
+					try {
+						//设置状态为启动状态
 						plugin.setPluginStatus(1);
 						plugin.init(args);
 						plugin.crawl();
+						//抓取完成后收回结果文件
 						File[] resultFiles=plugin.getResultFiles();
 						if (resultFiles!=null&&resultFiles.length>0) {
+							//将结果文件存入WebRoot
 							saveFileToWebRoot(plugin.getPluginID(), resultFiles);
 						}
-						File[] tfidfFiles=plugin.getTFIDFFiles();
-						if (tfidfFiles!=null&&tfidfFiles.length>0) {
-							saveFileToWebRoot(plugin.getPluginID(), tfidfFiles);
-						}
 						plugin.setPluginStatus(0);
+						//从线程池中移除该线程
+						threadMap.remove(plugin.getPluginID());
+					} catch (Exception e) {
+						// TODO: handle exception
+						e.printStackTrace();
+						plugin.setPluginStatus(0);
+						threadMap.remove(plugin.getPluginID());
+					}
+						
 				}
 			});
-			thread.start();
+			//在开始时将该线程放入线程池
 			threadMap.put(plugin.getPluginID(), thread);
+			thread.start();
+			
 		}
 	}
-	
+	//通过pluginID启动插件,方法同上
 	@Override
-	public void crawl(final String pluginId,final String[] args) {
+	public void crawl(final String pluginId,final String[] args){
 		for (final Plugin plugin : plugins) {
 			if (plugin.getPluginID().equals(pluginId)&&plugin.getPluginStatus()==0) {
 				Thread thread=new Thread(new Runnable() {
@@ -98,7 +110,7 @@ public class MainController implements IController {
 					@Override
 					public void run() {
 						// TODO Auto-generated method stub
-						
+						try {
 							plugin.setPluginStatus(1);
 							plugin.init(args);
 							plugin.crawl();
@@ -106,27 +118,22 @@ public class MainController implements IController {
 							if (resultFiles!=null&&resultFiles.length>0) {
 								saveFileToWebRoot(plugin.getPluginID(), resultFiles);
 							}
-							File[] tfidfFiles=plugin.getTFIDFFiles();
-							if (tfidfFiles!=null&&tfidfFiles.length>0) {
-								saveFileToWebRoot(plugin.getPluginID(), tfidfFiles);
-							}
-							
 							plugin.setPluginStatus(0);
+							threadMap.remove(plugin.getPluginID());
+						} catch (Exception e) {
+							e.printStackTrace();
+							plugin.setPluginStatus(0);
+							threadMap.remove(plugin.getPluginID());
 						}
+							
+					}
 				});
-				thread.start();
 				threadMap.put(pluginId,thread);
+				thread.start();
 				break;
 			}
 		}
 	}
-	
-//	public void runAllPlugin(){
-//		for (Plugin plugin : plugins) {
-//			plugin.init(new String[]{});
-//			plugin.crawl();
-//		}
-//	}
 	
 	public ArrayList<Plugin> getPlugins() {
 		return plugins;
@@ -135,7 +142,7 @@ public class MainController implements IController {
 	public void setPlugins(ArrayList<Plugin> plugins) {
 		this.plugins = plugins;
 	}
-
+	
 	public Plugin getOnePlugin(String pluginId){
 		for (Plugin plugin : plugins) {
 			if (plugin.getPluginID().equals(pluginId)) {
@@ -144,40 +151,102 @@ public class MainController implements IController {
 		}
 		return null;
 	}
-	
+	//停止插件
 	@SuppressWarnings("deprecation")
 	@Override
-	public void stop(Plugin plugin) {
-		// TODO Auto-generated method stub
+	public synchronized void stop(final Plugin plugin) {
 		if (threadMap.containsKey(plugin.getPluginID())&&plugin.getPluginStatus()==1) {
-			plugin.setPluginStatus(0);
+			try {
+				//监听插件状态的线程
+				Thread listenerThread=new Thread(new Runnable() {
+					
+					@Override
+					public void run() {
+						while (true) {
+							if (threadMap.get(plugin.getPluginID())!=null) {
+								//同步threadMap，防止出现该线程已经被移除的情况
+								synchronized (threadMap) {
+									if (threadMap.get(plugin.getPluginID())!=null) {
+										if (threadMap.get(plugin.getPluginID())!=null&&threadMap.get(plugin.getPluginID()).isAlive()) {
+											//设置plugin状态为停止中
+											plugin.setPluginStatus(-1);
+										}
+									}else {
+										//设置状态为停止，移除该线程
+										plugin.setPluginStatus(0);
+										threadMap.remove(plugin.getPluginID());
+										break;
+									}
+								}
+							}else {
+								plugin.setPluginStatus(0);
+								threadMap.remove(plugin.getPluginID());
+								break;
+							}
+						}
+					}
+				});
+				//开始监听并开始停止插件
+				listenerThread.start();
+				plugin.stop();
+				//最终要把结果文件拿回
+				File[] resultFiles=plugin.getResultFiles();
+				if (resultFiles!=null&&resultFiles.length>0) {
+					saveFileToWebRoot(plugin.getPluginID(), resultFiles);
+				}
+			} catch (Exception e) {
+				plugin.setPluginStatus(0);
+				threadMap.remove(plugin.getPluginID());
+				e.printStackTrace();
+			}
 			
-			threadMap.get(plugin.getPluginID()).stop();
-			System.out.println(plugin.getPluginID()+"stopped");
-			threadMap.remove(plugin.getPluginID());
+			
 		}
 	}
-	
+	//同上，但是通过pluginID停止
 	@SuppressWarnings("deprecation")
 	@Override
-	public void stop(String pluginID) {
+	public synchronized void stop(String pluginID) {
 		for (final Plugin plugin : plugins) {
 			if (plugin.getPluginID().equals(pluginID)&&plugin.getPluginStatus()==1) {
-				plugin.setPluginStatus(0);
-				plugin.getCrawler().stop();
-				threadMap.get(pluginID).stop();
-				threadMap.remove(plugin.getPluginID());
+				try {
+					Thread listenerThread=new Thread(new Runnable() {
+						
+						@Override
+						public void run() {
+							while (true) {
+								if (threadMap.get(plugin.getPluginID())!=null&&threadMap.get(plugin.getPluginID()).isAlive()) {
+									plugin.setPluginStatus(-1);
+								}else {
+									break;
+								}
+									
+							}
+						}
+					});
+					listenerThread.start();
+					plugin.stop();
+					File[] resultFiles=plugin.getResultFiles();
+					if (resultFiles!=null&&resultFiles.length>0) {
+						saveFileToWebRoot(plugin.getPluginID(), resultFiles);
+					}
+					plugin.setPluginStatus(0);
+					threadMap.remove(plugin.getPluginID());
+				} catch (Exception e) {
+					
+					e.printStackTrace();
+				}
 			}
 		}
 	}
-	
+	//保存结果文件到WebRoot
 	private void saveFileToWebRoot(String pluginID,File[] file){
 		try {
 			if (file!=null&&file.length>0) {
-				
 				for (int i = 0; i < file.length; i++) {
-					
-					FileUtils.copyFile(file[i], new File("WebRoot/data/"+pluginID+"_"+file[i].getName()));
+					if (file[i]!=null&&file[i].exists()&&file[i].canRead()) {
+						FileUtils.copyFileToDirectory(file[i], new File("WebRoot/data/"+pluginID));
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -185,36 +254,16 @@ public class MainController implements IController {
 			e.printStackTrace();
 		}
 	}
-	
-	public File[] listDownloadFiles(){
-		File[] files=FileUtils.getFile("WebRoot/data").listFiles(new FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				if (!pathname.isDirectory()) {
-					return true;
-				}
-				return false;
-			}
-		});
+	//获得WebRoot中用于下载的文件
+	public File[] listDownloadFiles(String path){
+		File[] files=FileUtils.getFile("WebRoot/data/"+path).listFiles();
 		return files;
 	}
 	
 	public File[] listLogFiles(){
-		File[] files=FileUtils.getFile("WebRoot/log").listFiles(new FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				if (!pathname.isDirectory()) {
-					return true;
-				}
-				return false;
-			}
-		});
+		File[] files=FileUtils.getFile("WebRoot/log").listFiles();
 		return files;
+		
 	}
-	
-//	public InputStream getInputStream(){
-//		return this.inputStream;
-//	}
-	
 
 }

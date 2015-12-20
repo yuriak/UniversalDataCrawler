@@ -21,6 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.omg.CORBA.PRIVATE_MEMBER;
 
+import cn.edu.dufe.dufedata.bean.LogBean;
 import cn.edu.dufe.dufedata.controller.MainController;
 import cn.edu.dufe.dufedata.plugin.Plugin;
 import cn.edu.dufe.dufedata.util.Json2CSV;
@@ -28,8 +29,7 @@ import cn.edu.dufe.dufedata.util.LogQueueUtil;
 
 public class API extends HttpServlet {
 	
-	
-	
+
 	/**
 	 * Constructor of the object.
 	 */
@@ -88,6 +88,7 @@ public class API extends HttpServlet {
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
 		request.setCharacterEncoding("utf-8");
+		//接收不同的action，执行不同的动作
 		if (request.getParameter("action").equals("start")) {
 			out.println(startOnePlugin(request.getParameter("pluginID"), request.getParameter("param").split(" ")));
 		}else if (request.getParameter("action").equals("stop")) {
@@ -100,12 +101,14 @@ public class API extends HttpServlet {
 			File file=new File("WebRoot/data/"+request.getParameter("values"));
 			out.println(toCSV(file));
 		}else if (request.getParameter("action").equals("log")) {
-			out.print(getLog());
+			int currentCursor=Integer.valueOf(request.getParameter("cursor"));
+			out.print(getLog(currentCursor));
 		}
 		out.flush();
 		out.close();
 	}
-
+	
+	
 	/**
 	 * Initialization of the servlet. <br>
 	 *
@@ -115,14 +118,18 @@ public class API extends HttpServlet {
 		// Put your code here
 	}
 	
-	
+	//启动插件
 	public String startOnePlugin(String pluginID,String[] args){
 		MainController controller=MainController.getInstance();
 		Plugin plugin=controller.getOnePlugin(pluginID);
 		JSONObject object=new JSONObject();
 		if (plugin!=null) {
-			controller.crawl(plugin, args);
-			
+			try {
+				controller.crawl(plugin, args);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			object.put("pluginID", plugin.getPluginID());
 			object.put("status", "1");
 			object.put("error", "");
@@ -133,7 +140,7 @@ public class API extends HttpServlet {
 		}
 		return object.toString();
 	}
-	
+	//停止插件
 	public String stopOnePlugin(String pluginID){
 		MainController controller=MainController.getInstance();
 		Plugin plugin=controller.getOnePlugin(pluginID);
@@ -145,12 +152,12 @@ public class API extends HttpServlet {
 			object.put("error", "");
 		}else {
 			object.put("pluginID", "");
-			object.put("status", "-1");
+			object.put("status", "0");
 			object.put("error", "invalid plugin");
 		}
 		return object.toString();
 	}
-	
+	//获取状态
 	public String getStatus(){
 		MainController controller=MainController.getInstance();
 		ArrayList<Plugin> plugins=controller.getPlugins();
@@ -165,7 +172,7 @@ public class API extends HttpServlet {
 		object.put("result", array);
 		return object.toString();
 	}
-	
+	//删除文件
 	public String deleteFile(String fileName){
 		JSONObject object;
 		if (fileName.startsWith("log")) {
@@ -197,7 +204,7 @@ public class API extends HttpServlet {
 	}
 	
 	
-	
+	//通过工具转换csv
 	public String toCSV(File file){
 		JSONObject object=new JSONObject();
 		try {
@@ -221,10 +228,14 @@ public class API extends HttpServlet {
 			return object.toString();
 		}
 	}
-	
-	public String getLog(){
+	//通过游标获取日志
+	public String getLog(int currentCursor){
 		if (LogQueueUtil.getInstance().getQueueSize()>0) {
-			return LogQueueUtil.getInstance().getLog();
+			LogBean bean=LogQueueUtil.getInstance().getLog(currentCursor);
+			JSONObject object=new JSONObject();
+			object.put("lastCursor", bean.getCurrentCursor());
+			object.put("log", bean.getLog());
+			return object.toString();
 		}
 		return "";
 	}

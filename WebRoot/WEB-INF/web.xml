@@ -12,6 +12,10 @@
   <servlet>
     <servlet-name>API</servlet-name>
     <servlet-class>cn.edu.dufe.dufedata.servlet.API</servlet-class>
+    <init-param>
+            <param-name>useFileMappedBuffer</param-name>
+            <param-value>false</param-value>
+    </init-param>
   </servlet>
 
   <servlet-mapping>

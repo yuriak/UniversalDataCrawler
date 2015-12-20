@@ -90,67 +90,6 @@ MainController controller=MainController.getInstance();
            <h2 class="sub-header">Log</h2>
            <div  id="log" style=" height:200px; overflow: scroll; background-color: black">
    			</div>
-<style type="text/css">
-    .DUMMY { color: black }
-    .DEBUG { color: #21610b }
-    .INFO { color: blue }
-    .WARNING { color: #ff8000 }
-    .ERROR { color: #fe2e2e }
-    .CRITICAL { color: #d7df01 }
-</style>
-<!-- JavaScript -->
-<script type="text/javascript">
-    $('#log').scroll(function() {
-        var preservedHeight = $('#log').height() + 10,
-            scrollHeight    = $('#log')[0].scrollHeight,
-            scrollTop       = $('#log').scrollTop();
-        if ( scrollTop + preservedHeight == scrollHeight ) {
-            window.isAutoScrollLog = true;
-        } else {
-            window.isAutoScrollLog = false;
-        }
-    });
-</script>
-<script type="text/javascript">
-    function scrollLog() {
-        if ( window.isAutoScrollLog ) {
-            $('#log').scrollTop($('#log')[0].scrollHeight);
-        }
-    }
-</script>
-<script type="text/javascript">
-	var count=10;
-    function getLog(){
-    	 	var pageRequests = {
-            'action': 'log',
-        };
-         $.post("API", { action:"log" }, function (result) {
-         if(result!=null&&result!=""&&result.length>0&&result!="\\n"){
-         count=count+30;
-         result.replace("\\n","<br/>");
-               $("#log").append("<p style=\"color: green;\">"+result+"</p>");
-               $("#log").scrollTop($("#log")[0].scrollHeight);
-               }
-	    });
-    
-    }
-</script>
-<script type="text/javascript">
-    function getLogLevel(log) {
-        if ( log.indexOf('[DEBUG]') != -1 ) {
-            return 'DEBUG';
-        } else if ( log.indexOf('[INFO]') != -1 ) {
-            return 'INFO';
-        } else if ( log.indexOf('[WARNING]') != -1 ) {
-            return 'WARNING';
-        } else if ( log.indexOf('[ERROR]') != -1 ) {
-            return 'ERROR';
-        } else if ( log.indexOf('[CRITICAL]') != -1 ) {
-            return 'CRITICAL';
-        }
-        return 'DUMMY';
-    }
-</script>
 			</div> <!-- #log-container -->
 			</div>
         </div>
@@ -175,24 +114,40 @@ $(".operation").click(function(e){
     
 });
 
-String.prototype.format = function() {
+/*String.prototype.format = function() {
     var newStr = this, i = 0;
     while (/%s/.test(newStr)) {
         newStr = newStr.replace("%s", arguments[i++])
     }
     return newStr;
-}
+}*/
 
 $(function(){
+		window.currentCursor=0;
 		var timer = $.timer(function() {
 		getStatus();
 		getLog();
+		//console.log(window.currentCursor);
         });
         timer.set({
             time: 500,
             autostart: true
         });
 });
+
+function getLog(){
+		console.log(window.currentCursor);
+         $.post("API", { action:"log",cursor:window.currentCursor }, function (result) {
+         var logs=$.parseJSON(result);
+         if(logs.log!=null&&logs.log!=""&&logs.log.length>0&&logs.log!="\\n"){
+         logs.log.replace("\\n","<br/>");
+               $("#log").append("<p style=\"color: green;\">"+logs.log+"</p>");
+               $("#log").scrollTop($("#log")[0].scrollHeight);
+               window.currentCursor=logs.lastCursor;
+               console.log(window.currentCursor);
+               }
+	    });
+}
 
 function getStatus(){
 	var statusRequest={action:"status"};
@@ -216,6 +171,10 @@ function getStatus(){
             					$(op[j]).html("start");
             					$("#st_"+res[i].pluginID).html("stopped");
             					$("#st_"+res[i].pluginID).attr("style","color:black;");
+            				}else if(res[j].status==-1){
+            					$(op[j]).html("wait");
+            					$("#st_"+res[i].pluginID).html("stopping");
+            					$("#st_"+res[i].pluginID).attr("style","color:blue;");
             				}
             			}
             		}
