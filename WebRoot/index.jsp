@@ -1,10 +1,16 @@
-﻿<%@page import="cn.edu.dufe.dufedata.plugin.Plugin"%>
+﻿<%@page import="cn.edu.dufe.dufedata.node.NodeStatus"%>
+<%@page import="cn.edu.dufe.dufedata.bean.PluginBean"%>
+<%@page import="cn.edu.dufe.dufedata.node.NodeRole"%>
+<%@page import="cn.edu.dufe.dufedata.node.Node"%>
+<%@page import="cn.edu.dufe.dufedata.controller.NodeController"%>
+<%@page import="cn.edu.dufe.dufedata.plugin.Plugin"%>
 <%@page import="cn.edu.dufe.dufedata.controller.MainController"%>
 <%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
 <%
 String path = request.getContextPath();
 String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
 MainController controller=MainController.getInstance();
+NodeController nodeController=NodeController.getInstance();
 %>
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -62,6 +68,7 @@ MainController controller=MainController.getInstance();
                   <th>ID</th>
                   <th>Author</th>
                   <th>Version</th>
+                  <th>Location</th>
                   <th>Status</th>
                   <th>Operations</th>
                   <th>Params</th>
@@ -75,16 +82,42 @@ MainController controller=MainController.getInstance();
                   <td><%=plugin.getPluginID() %></td>
                   <td><%=plugin.getPluginAuthor() %></td>
                   <td><%=plugin.getPluginVersion() %></td>
-                  <td class="status" id="st_<%=plugin.getPluginID()%>"></td>
-                  <td><a class="operation" id="op_<%=plugin.getPluginID()%>" href="#">start</a> | <a href="readme.jsp?pluginID=<%=plugin.getPluginID()%>" target="_blank">readme</a></td>
-                  <td><input class="param" type="text" id="param_<%=plugin.getPluginID()%>"></input></td>
+                  <td>local</td>
+                  <td class="status" id="st_local_<%=plugin.getPluginID()%>"></td>
+                  <td><a class="operation" id="op_local_<%=plugin.getPluginID()%>" href="#">start</a> | <a href="readme.jsp?pluginID=<%=plugin.getPluginID()%>" target="_blank">readme</a></td>
+                  <td><input class="param" type="text" id="param_local_<%=plugin.getPluginID()%>"></input></td>
                 </tr>
                 <%
                 }
-                 %>
+                %>
+                 <hr/>
+                <%
+                if(nodeController.getSelf().getRole()==NodeRole.MASTER)
+                {
+                for(Node slave : nodeController.getSlaves()){
+                if(slave.getStatus()==NodeStatus.ALIVE){
+                	Set<String> key=slave.getPlugins().keySet();
+                	Iterator<String> iterator=key.iterator();
+                	while(iterator.hasNext()){
+                	PluginBean pluginBean=slave.getPlugins().get(iterator.next());
+                %>
+                  <tr>
+                  <td><%=pluginBean.getPluginID() %></td>
+                  <td><%=pluginBean.getPluginAuthor() %></td>
+                  <td><%=pluginBean.getPluginVersion() %></td>
+                  <td><%=slave.getName() %></td>
+                  <td class="status" id="st_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></td>
+                  <td><a class="operation" id="op_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>" href="#">start</a> | <a href="readme.jsp?pluginID=<%=pluginBean.getPluginID()%>" target="_blank">readme</a></td>
+                  <td><input class="param" type="text" id="param_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></input></td>
+                </tr>
+               	<%
+                  		}
+                 	}
+                 	}
+               	}
+                %>
               </tbody>
             </table>
-
 			</div>
 			<div class="container-fluid">
            <h2 class="sub-header">Log</h2>
@@ -101,9 +134,11 @@ MainController controller=MainController.getInstance();
 $(".operation").click(function(e){
 	var list=$(".param");
 	for(i=0;i<list.size();i++){
-		id=$(list.get(i)).attr("id").split("_",2);
-		if(id[1]==$(e.target).attr("id").split("_",2)[1]){
-		    $.post("API", { action:$(e.target).text(),  pluginID: id[1], param: $(list.get(i)).val() }, function (result) {
+		loc=$(list.get(i)).attr("id").split("_")[1];
+		pid=$(list.get(i)).attr("id").split("_")[2];
+		if(loc==$(e.target).attr("id").split("_")[1]&&pid==$(e.target).attr("id").split("_")[2]){
+		console.log({ action:$(e.target).text(),location:loc,  pluginID: pid, param: $(list.get(i)).val() });
+		    $.post("API", { action:$(e.target).text(),location:loc,  pluginID: pid, param: $(list.get(i)).val() }, function (result) {
                 var res=$.parseJSON(result);
                 if(res.error==""){
                 	$(e.target).html("stop");
@@ -136,7 +171,6 @@ $(function(){
 });
 
 function getLog(){
-		console.log(window.currentCursor);
          $.post("API", { action:"log",cursor:window.currentCursor }, function (result) {
          var logs=$.parseJSON(result);
          if(logs.log!=null&&logs.log!=""&&logs.log.length>0&&logs.log!="\\n"){
@@ -160,21 +194,21 @@ function getStatus(){
             	var res=JSON.parse(result).result;
             	for(i=0;i<res.length;i++){
             		var op=$(".operation");
-            		
             		for(j=0;j<op.size();j++){
-            			if(res[i].pluginID==$(op[j]).attr("id").split("_")[1]){
+            			var pal=res[i].loc+"_"+res[i].pluginID;
+            			if(pal==$(op[j]).attr("id").split("_")[1]+"_"+$(op[j]).attr("id").split("_")[2]){
             				if(res[i].status==1){
             					$(op[j]).html("stop");
-            					$("#st_"+res[i].pluginID).html("running");
-            					$("#st_"+res[i].pluginID).attr("style","color:red;");
+            					$("#st_"+pal).html("running");
+            					$("#st_"+pal).attr("style","color:red;");
             				}else if(res[j].status==0){
             					$(op[j]).html("start");
-            					$("#st_"+res[i].pluginID).html("stopped");
-            					$("#st_"+res[i].pluginID).attr("style","color:black;");
+            					$("#st_"+pal).html("stopped");
+            					$("#st_"+pal).attr("style","color:black;");
             				}else if(res[j].status==-1){
             					$(op[j]).html("wait");
-            					$("#st_"+res[i].pluginID).html("stopping");
-            					$("#st_"+res[i].pluginID).attr("style","color:blue;");
+            					$("#st_"+pal).html("stopping");
+            					$("#st_"+pal).attr("style","color:blue;");
             				}
             			}
             		}

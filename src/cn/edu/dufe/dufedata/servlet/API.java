@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -15,6 +16,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.bcel.generic.NEW;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.CharSet;
 import org.json.JSONArray;
@@ -23,13 +25,15 @@ import org.omg.CORBA.PRIVATE_MEMBER;
 
 import cn.edu.dufe.dufedata.bean.LogBean;
 import cn.edu.dufe.dufedata.controller.MainController;
+import cn.edu.dufe.dufedata.controller.NodeController;
+import cn.edu.dufe.dufedata.node.Node;
 import cn.edu.dufe.dufedata.plugin.Plugin;
 import cn.edu.dufe.dufedata.util.Json2CSV;
 import cn.edu.dufe.dufedata.util.LogQueueUtil;
 
 public class API extends HttpServlet {
-	
-
+	MainController controller=MainController.getInstance();
+	NodeController nodeController=NodeController.getInstance();
 	/**
 	 * Constructor of the object.
 	 */
@@ -84,13 +88,12 @@ public class API extends HttpServlet {
 	 */
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
 		request.setCharacterEncoding("utf-8");
 		//接收不同的action，执行不同的动作
 		if (request.getParameter("action").equals("start")) {
-			out.println(startOnePlugin(request.getParameter("pluginID"), request.getParameter("param").split(" ")));
+			out.println(startOnePlugin(request.getParameter("location"),request.getParameter("pluginID"), request.getParameter("param").split(" ")));
 		}else if (request.getParameter("action").equals("stop")) {
 			out.println(stopOnePlugin(request.getParameter("pluginID")));
 		}else if (request.getParameter("action").equals("status")) {
@@ -99,7 +102,14 @@ public class API extends HttpServlet {
 			out.println(deleteFile(request.getParameter("fileName")));
 		}else if (request.getParameter("action").equals("toCSV")) {
 			File file=new File("WebRoot/data/"+request.getParameter("values"));
-			out.println(toCSV(file));
+			String[] tmpStrings=request.getParameter("values").split("/");
+			String pluginID="";
+			System.out.println(tmpStrings.length);
+			System.out.println(request.getParameter("values"));
+			if (tmpStrings.length>=3) {
+				pluginID=request.getParameter("values").split("/")[1];
+			}
+			out.println(toCSV(pluginID,file));
 		}else if (request.getParameter("action").equals("log")) {
 			int currentCursor=Integer.valueOf(request.getParameter("cursor"));
 			out.print(getLog(currentCursor));
@@ -119,30 +129,40 @@ public class API extends HttpServlet {
 	}
 	
 	//启动插件
-	public String startOnePlugin(String pluginID,String[] args){
-		MainController controller=MainController.getInstance();
-		Plugin plugin=controller.getOnePlugin(pluginID);
+	public String startOnePlugin(String loc,String pluginID,String[] args){
 		JSONObject object=new JSONObject();
-		if (plugin!=null) {
-			try {
-				controller.crawl(plugin, args);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		if (loc.equals("local")) {
+			Plugin plugin=controller.getOnePlugin(pluginID);
+			if (plugin!=null) {
+				try {
+					controller.crawl(plugin, args);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				object.put("pluginID", plugin.getPluginID());
+				object.put("status", "1");
+				object.put("loc", "local");
+				object.put("error", "");
+			}else {
+				object.put("pluginID", "");
+				object.put("status", "-1");
+				object.put("loc", "local");
+				object.put("error", "invalid plugin");
 			}
-			object.put("pluginID", plugin.getPluginID());
+		}else {
+			Node slave=nodeController.getOneSlave(loc);
+			nodeController.startRemotePlugin(slave, pluginID, args);
+			object.put("pluginID", pluginID);
 			object.put("status", "1");
 			object.put("error", "");
-		}else {
-			object.put("pluginID", "");
-			object.put("status", "-1");
-			object.put("error", "invalid plugin");
+			object.put("loc", slave.getName());
 		}
+		
 		return object.toString();
 	}
 	//停止插件
 	public String stopOnePlugin(String pluginID){
-		MainController controller=MainController.getInstance();
 		Plugin plugin=controller.getOnePlugin(pluginID);
 		JSONObject object=new JSONObject(); 
 		if (plugin!=null) {
@@ -157,9 +177,10 @@ public class API extends HttpServlet {
 		}
 		return object.toString();
 	}
+	
 	//获取状态
 	public String getStatus(){
-		MainController controller=MainController.getInstance();
+		
 		ArrayList<Plugin> plugins=controller.getPlugins();
 		JSONObject object=new JSONObject();
 		JSONArray array=new JSONArray();
@@ -167,11 +188,26 @@ public class API extends HttpServlet {
 			JSONObject object2=new JSONObject();
 			object2.put("pluginID", plugin.getPluginID());
 			object2.put("status", plugin.getPluginStatus());
+			object2.put("loc", "local");
 			array.put(object2);
+		}
+		//如果是分布式的话，会获得远程节点状态
+		ArrayList<Node> slave=nodeController.getSlaves();
+		for (Node node : slave) {
+			Iterator<String> iterator=node.getPlugins().keySet().iterator();
+			while (iterator.hasNext()) {
+				String pluginID=iterator.next();
+				JSONObject pluginObject=new JSONObject();
+				pluginObject.put("pluginID", node.getPlugins().get(pluginID).getPluginID());
+				pluginObject.put("status", node.getPlugins().get(pluginID).getPluginStatus());
+				pluginObject.put("loc", node.getName());
+				array.put(pluginObject);
+			}
 		}
 		object.put("result", array);
 		return object.toString();
 	}
+	
 	//删除文件
 	public String deleteFile(String fileName){
 		JSONObject object;
@@ -205,16 +241,24 @@ public class API extends HttpServlet {
 	
 	
 	//通过工具转换csv
-	public String toCSV(File file){
+	public String toCSV(String pluginID,File file){
 		JSONObject object=new JSONObject();
 		try {
 			if (file!=null) {
 				String fileString=FileUtils.readFileToString(file);
 				String csvString=Json2CSV.toCsv(fileString);
-				File tmpFile=new File("WebRoot/data/"+file.getName()+".csv");
-				FileUtils.writeStringToFile(tmpFile, csvString,"UTF-8");
-				object.put("url", "data/"+tmpFile.getName());
-				object.put("error", "");
+				System.out.println(pluginID);
+				if (pluginID.equals("")) {
+					File tmpFile=new File("WebRoot/data/"+file.getName()+".csv");
+					FileUtils.writeStringToFile(tmpFile, csvString,"UTF-8");
+					object.put("url", "data/"+tmpFile.getName());
+					object.put("error", "");
+				}else {
+					File tmpFile=new File("WebRoot/data/"+pluginID+"/"+file.getName()+".csv");
+					FileUtils.writeStringToFile(tmpFile, csvString,"UTF-8");
+					object.put("url", "data/"+pluginID+"/"+tmpFile.getName());
+					object.put("error", "");
+				}
 				return object.toString();
 			}else {
 				object.put("url", "");
@@ -239,4 +283,5 @@ public class API extends HttpServlet {
 		}
 		return "";
 	}
+	
 }

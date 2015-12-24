@@ -1,5 +1,6 @@
 package cn.edu.dufe.dufedata.bean;
 
+
 public class LogBean {
 	/**
 	 * @return the maxCurrsor
@@ -37,7 +38,10 @@ public class LogBean {
 	public void setLog(String log) {
 		this.log = log;
 	}
+	//最大游标位置
 	private int maxCurrsor;
+	//当前游标位置
 	private int currentCursor;
+	//日志内容
 	private String log;
 }
