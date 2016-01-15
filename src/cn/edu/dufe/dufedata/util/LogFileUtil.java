@@ -33,6 +33,7 @@ public class LogFileUtil {
 			
 			FileUtils.write(logFile, logString, "utf-8", true);
 			FileUtils.copyFile(logFile, new File("WebRoot/log/"+logFile.getName()));
+			
 			//写入的时候要判断文件大小，用于切割
 			checkFileSize();
 		} catch (IOException e) {

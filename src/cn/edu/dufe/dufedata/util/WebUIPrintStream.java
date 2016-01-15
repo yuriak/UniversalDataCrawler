@@ -34,6 +34,8 @@ public class WebUIPrintStream extends PrintStream {
         if (System.console()!=null) {
 			console=System.console();
 		}
+        KafkaUtil.getInstance();
+        
     }
     
     /** *//**
@@ -45,9 +47,10 @@ public class WebUIPrintStream extends PrintStream {
     @Override
     public void write(byte[] buf, int off, int len){
         String message = new String(buf, off, len);
-        //在输出的时候讲信息发送给web日志队列和日志文件
+        //在输出的时候讲信息发送给web日志队列和日志文件以及kafka
         LogQueueUtil.getInstance().addLog(message);
         LogFileUtil.getInstance().addLog(message);
+        KafkaUtil.getInstance().sendToKafkaServer("DataCrawlerLog", message);
         //同时在系统console输出
         if (console!=null) {
 			console.writer().write(message);

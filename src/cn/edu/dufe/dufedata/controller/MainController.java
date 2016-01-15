@@ -6,14 +6,19 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import cn.edu.dufe.dufedata.common.CommonConfig;
 import cn.edu.dufe.dufedata.node.Node;
 import cn.edu.dufe.dufedata.plugin.Plugin;
+import cn.edu.dufe.dufedata.util.HDFSUtil;
+import cn.edu.dufe.dufedata.util.KafkaUtil;
 import cn.edu.dufe.dufedata.util.PluginLoader;
 import cn.edu.dufe.dufedata.util.WebUIPrintStream;
 
@@ -32,7 +37,7 @@ public class MainController implements IController {
 	public void setMode(int mode) {
 		this.mode = mode;
 	}
-
+	private static Logger logger = Logger.getLogger ( MainController.class );
 	private static MainController controller;
 	private ArrayList<Plugin> plugins;
 	private HashMap<String,Thread> threadMap;
@@ -40,7 +45,7 @@ public class MainController implements IController {
 	private int mode=CommonConfig.SINGLE;
 	private NodeController nodeController;
 	private MainController(){
-		
+	
 	}
 	
 	public static MainController getInstance(){
@@ -64,9 +69,13 @@ public class MainController implements IController {
 		 * 这几行给注释掉，IDE的console才会显示。
 		 */
 		//截获系统输出流并将输出流设置给WebUIPrintStream
+//		BasicConfigurator.configure();
 //		uiPrintStream=new WebUIPrintStream(System.out);
 //		System.setOut(uiPrintStream);
 //		System.setErr(uiPrintStream);
+		
+//		KafkaUtil.getInstance().sendToKafkaServer("DataCrawkerLog", "inited");
+		
 		if (System.console()!=null) {
 			System.console().writer().write("DataCrawler Inited");
 			System.console().writer().flush();
@@ -83,6 +92,9 @@ public class MainController implements IController {
 	@Override
 	public void loadPlugins() throws Exception {
 		plugins=PluginLoader.loadPlugins();
+		for (Plugin plugin : plugins) {
+			logger.info("loaded plugin: "+plugin.getPluginID());
+		}
 	}
 	
 	@Override
@@ -203,6 +215,10 @@ public class MainController implements IController {
 				for (int i = 0; i < file.length; i++) {
 					if (file[i]!=null&&file[i].exists()&&file[i].canRead()) {
 						//将文件复制并移动到系统和Webroot的data中
+//						pushFileToKafka(pluginID, file[i]);
+						logger.info("transporting files");
+						HDFSUtil.getInstance().uploadFile(file[i], pluginID);
+						logger.info("!!!");
 						FileUtils.copyFileToDirectory(file[i], new File("WebRoot/data/"+pluginID));
 						FileUtils.moveFileToDirectory(file[i], new File("data/"+pluginID), true);
 						//如果使用分布式，则把需要下载的文件装入本NODE的待下载列表
@@ -212,6 +228,7 @@ public class MainController implements IController {
 								self.getFileList().add("http://"+self.getAddress()+"/data/"+pluginID+"/"+file[i].getName());
 							}
 						}
+						
 					}
 				}
 			}
@@ -219,6 +236,17 @@ public class MainController implements IController {
 			
 			e.printStackTrace();
 		}
+	}
+	
+	private void pushFileToKafka(String pluginID,File file){
+		String content="";
+		try {
+			content=FileUtils.readFileToString(file);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		KafkaUtil.getInstance().sendToKafkaServer(pluginID, content);
 	}
 	
 	//获得Data中用于下载的文件
@@ -230,7 +258,6 @@ public class MainController implements IController {
 	public File[] listLogFiles(){
 		File[] files=FileUtils.getFile("WebRoot/log").listFiles();
 		return files;
-		
 	}
 	
 }

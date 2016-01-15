@@ -30,7 +30,7 @@ public class MasterUtil {
 	public static boolean sendAcktoSlaves(Node self, Node slave){
 		try {
 			Map<String, String> dataMap=MyMapUtils.fillMap("mName",self.getName(),"mAddr",self.getAddress(),"sName",slave.getName(),"sAddr",slave.getAddress());
-			String result=PostUtil.post("http://"+slave.getAddress()+"/NAPI/ack.do", dataMap);
+			String result=HttpUtil.post("http://"+slave.getAddress()+"/NAPI/ack.do", dataMap);
 			//接收返回的结果
 			if (!result.isEmpty()&&result.startsWith("{")) {
 				JSONObject resultObject=new JSONObject(result);
@@ -98,7 +98,7 @@ public class MasterUtil {
 			//用我的maputil把pluginid和参数都塞进去
 			Map<String, String> params=MyMapUtils.fillMap("pID",pluginID,"args",argBuilder.toString());
 			//然后发出去，等回复
-			String result=PostUtil.post("http://"+slaveAddress+"/NAPI/startPlugin.do", params);
+			String result=HttpUtil.post("http://"+slaveAddress+"/NAPI/startPlugin.do", params);
 			if (result!=null&&result.startsWith("{")) {
 				//然后把回复解析一下
 				JSONObject resultObject=new JSONObject(result);
@@ -122,7 +122,7 @@ public class MasterUtil {
 	public static boolean sendStopOrder(String slaveAddress,String pluginID){
 		try {
 			Map<String, String> params=MyMapUtils.fillMap("pID",pluginID);
-			String result=PostUtil.post("http://"+slaveAddress+"/NAPI/stopPlugin.do", params);
+			String result=HttpUtil.post("http://"+slaveAddress+"/NAPI/stopPlugin.do", params);
 			if (result!=null&&result.startsWith("{")) {
 				JSONObject resultObject=new JSONObject(result);
 				String resString=resultObject.get("result").toString();

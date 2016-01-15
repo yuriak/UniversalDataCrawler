@@ -16,6 +16,7 @@ import java.util.Hashtable;
 		
 
 		private static Hashtable _stopwords=null;
+		private static Hashtable _stopProperties=null;
 
 		public static Object AddElement(Dictionary collection,Object key, Object newValue)
 		{
@@ -30,7 +31,10 @@ import java.util.Hashtable;
 			//int index=Array.BinarySearch(stopWordsList, str)
 			return _stopwords.containsKey(str.toLowerCase());
 		}
-	
+		
+		public static boolean IsStopProperty(String property){
+			return _stopProperties.containsKey(property.toLowerCase());
+		}
 
 		static  
 		{
@@ -41,10 +45,13 @@ import java.util.Hashtable;
 				for(String word:stopWordsList){
 					_stopwords.put(word, dummy);
 				}
-				/*foreach (String word in stopWordsList)
-				{
-					AddElement(_stopwords, word, dummy);
-				}*/
+			}
+			if (_stopProperties==null){
+				_stopProperties=new Hashtable();
+				double dummy = 0;
+				for (String property : stopPropertyOfWords) {
+					_stopProperties.put(property, dummy);
+				}
 			}
 		}
 	}

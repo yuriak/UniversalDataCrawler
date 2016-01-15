@@ -10,6 +10,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -22,12 +23,19 @@ import cn.edu.dufe.dufedata.controller.MainController;
 import cn.edu.dufe.dufedata.node.Node;
 import cn.edu.dufe.dufedata.plugin.Plugin;
 import cn.edu.dufe.dufedata.servlet.API;
+import cn.edu.dufe.dufedata.util.HDFSUtil;
+import cn.edu.dufe.dufedata.util.KafkaUtil;
+import cn.edu.dufe.dufedata.util.LogFileUtil;
+import cn.edu.dufe.dufedata.util.LogQueueUtil;
 
 public class Launcher {
-	
-	
-	
+	private static Logger logger = Logger.getLogger ( Launcher.class );
 	public static void main(String[] args) throws Exception {
+		LogQueueUtil.getInstance();
+		LogFileUtil.getInstance();
+		KafkaUtil.getInstance();
+		HDFSUtil.getInstance();
+		logger.info("launching...");
 		final MainController mainController=MainController.getInstance();
 		if (args!=null) {
 			if (!args[0].isEmpty()&&args[0].equals("-startserver")) {
@@ -39,7 +47,6 @@ public class Launcher {
 					}
 					
 					mainController.init(args);
-					
 					startServer(Integer.valueOf(args[1]));
 				}else {
 					return ;

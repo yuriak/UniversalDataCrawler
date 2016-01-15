@@ -46,6 +46,7 @@ public class LogQueueUtil {
 			logQueue.clear();
 		}
 		logQueue.add(logString);
+		
 	}
 	
 	public int getQueueSize(){

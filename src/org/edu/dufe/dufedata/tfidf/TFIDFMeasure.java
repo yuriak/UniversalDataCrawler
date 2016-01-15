@@ -20,14 +20,14 @@ public class TFIDFMeasure {
 		private int[] _maxTermFreq;
 		private int[] _docFreq;
 
-        ITokeniser _tokenizer = null;
+        ISegmenter _tokenizer = null;
 
 
 
 
 	    private Dictionary _wordsIndex=new Hashtable() ;
 
-		public TFIDFMeasure(String[] documents,ITokeniser tokeniser)
+		public TFIDFMeasure(String[] documents,ISegmenter tokeniser)
 		{
 //			System.out.println("TFIDFMeasure()");
 			_docs=documents;

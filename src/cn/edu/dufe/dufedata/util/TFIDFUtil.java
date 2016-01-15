@@ -15,7 +15,7 @@ import org.omg.CORBA.PRIVATE_MEMBER;
 public class TFIDFUtil {
 		public static double[][] parse(String[] sourceData){
 		String[] stringArray=sourceData;
-		TFIDFMeasure tf = new TFIDFMeasure(stringArray, new Tokeniser());
+		TFIDFMeasure tf = new TFIDFMeasure(stringArray, new AnsSegmenter());
         //生成k-means的输入数据，是一个联合数组，第一维表示文档个数，
         //第二维表示所有文档分出来的所有词
         double[][] data = new double[stringArray.length][];
@@ -67,7 +67,7 @@ public class TFIDFUtil {
 	public static ArrayList<File> parseAndSaveToCSV(String[] sourceData,String dictFilename,String dataFileName){
 		ArrayList<File> tfidfFiles=new ArrayList<>();
 		String[] stringArray=sourceData;
-		TFIDFMeasure tf = new TFIDFMeasure(stringArray, new Tokeniser());
+		TFIDFMeasure tf = new TFIDFMeasure(stringArray, new AnsSegmenter());
         //生成k-means的输入数据，是一个联合数组，第一维表示文档个数，
         //第二维表示所有文档分出来的所有词
         double[][] data = new double[stringArray.length][];

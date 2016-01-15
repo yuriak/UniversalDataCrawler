@@ -11,6 +11,7 @@ import java.util.Timer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Connection.Response;
@@ -42,7 +43,7 @@ public class NodeController {
 		this.self = self;
 	}
 	
-	private static Log log=LogFactory.getLog(NodeController.class); 
+	private static Logger log=Logger.getLogger(NodeController.class); 
 	//本节点
 	private Node self=new Node();
 	private ArrayList<Node> slaves=new ArrayList<>();
@@ -192,7 +193,7 @@ public class NodeController {
 	
 	//读取配置文件
 	private void readConf() throws IOException{
-		File confFile=new File("conf/crawler.conf");
+		File confFile=new File(CommonConfig.CLUSTER_CONFIG);
 		ArrayList<String> confString=(ArrayList<String>) FileUtils.readLines(confFile);
 		for (String string : confString) {
 			if (string.startsWith("role")) {
