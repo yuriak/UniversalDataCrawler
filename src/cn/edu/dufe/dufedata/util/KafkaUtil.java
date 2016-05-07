@@ -50,6 +50,9 @@ public class KafkaUtil {
 	private void readKafkaConfig(){
 		
 		File kafkaConfigFile=new File(CommonConfig.KAFKA_CONFIG);
+		if (!kafkaConfigFile.exists()) {
+			return;
+		}
 		if (kafkaConfigFile!=null) {
 			try {
 				List<String> configList=FileUtils.readLines(kafkaConfigFile);
@@ -65,14 +68,15 @@ public class KafkaUtil {
 					}
 				}
 				inited=true;
-				Properties props = new Properties();
-				props.put("serializer.class", "kafka.serializer.StringEncoder");
-				props.put("metadata.broker.list", kafkaServer);
-				props.put("request.required.acks","0");
-				props.put("producer.type", "async");
-				props.put("queue.buffering.max.messages", "100000000");
-				producer = new Producer<String, String>(new ProducerConfig(props));
-				
+				if (useKafka==true) {
+					Properties props = new Properties();
+					props.put("serializer.class", "kafka.serializer.StringEncoder");
+					props.put("metadata.broker.list", kafkaServer);
+					props.put("request.required.acks","0");
+					props.put("producer.type", "async");
+					props.put("queue.buffering.max.messages", "100000000");
+					producer = new Producer<String, String>(new ProducerConfig(props));
+				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

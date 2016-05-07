@@ -48,6 +48,7 @@ public class Launcher {
 					
 					mainController.init(args);
 					startServer(Integer.valueOf(args[1]));
+					 
 				}else {
 					return ;
 				}
@@ -67,8 +68,10 @@ public class Launcher {
 		context.setContextPath(".");
 		context.setResourceBase("WebRoot");
         server.setHandler(context);
+        Process p = Runtime.getRuntime().exec("cmd /c start http://localhost:"+port );
 		server.start();
 		server.join();
+		
 	}
 	
 	public static void startPlugin(String pluginID,String[] args){

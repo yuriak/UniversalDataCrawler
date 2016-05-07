@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URI;
 import java.util.List;
 
+import org.apache.commons.compress.archivers.jar.JarArchiveEntry;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;

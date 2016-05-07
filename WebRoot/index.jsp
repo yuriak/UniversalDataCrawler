@@ -15,83 +15,84 @@ NodeController nodeController=NodeController.getInstance();
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-  <head>
-    <base href="<%=basePath%>">
-    
-    <title>DufeDataCrawler</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<meta http-equiv="pragma" content="no-cache">
-	<meta http-equiv="cache-control" content="no-cache">
-	<meta http-equiv="expires" content="0">    
-	<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
-	<meta http-equiv="description" content="This is my page">
-	
-	<link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
-	<link rel="stylesheet" type="text/css" href="./css/dashboard.css">
-	<link rel="stylesheet" type="text/css" href="./css/style.css">
-	<script type="text/javascript" src="./js/bootstrap.js"></script>
-	<script type="text/javascript" src="./js/holder.min.js"></script>
-	<script type="text/javascript" src="./js/ie-emulation-modes-warning.js"></script>
-	<script type="text/javascript" src="./js/ie10-viewport-bug-workaround.js"></script>
-	<script type="text/javascript" src="./js/jquery-1.11.3.js"></script>
-	<script type="text/javascript" src="./js/jquery.timer.js"></script>
-	<script type="text/javascript" src="./js/jquery.placeholder.min.js"></script>
-	<script type="text/javascript" src="./js/jquery.xdomainrequest.min.js"></script>
-  </head>
-  
-  <body>
-        <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <a class="navbar-brand" href="#">DufeDataCrawler</a>
-        </div>
-      </div>
-    </nav>
+<head>
+<base href="<%=basePath%>">
 
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar" style="background-color: black;">
-          <ul class="nav nav-sidebar">
-            <li class="active"><a href="index.jsp">Plugin <span class="sr-only">(current)</span></a></li>
-            <li><a href="files.jsp">Result</a></li>
-            <li><a href="log.jsp">Log</a></li>
-          </ul>
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <h1 class="page-header">Dashboard</h1>
-			<hr/>
-          <h2 class="sub-header">Plugins</h2>
-          <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Author</th>
-                  <th>Version</th>
-                  <th>Location</th>
-                  <th>Status</th>
-                  <th>Operations</th>
-                  <th>Params</th>
-                </tr>
-              </thead>
-              <tbody>
-              <% 
+<title>DufeDataCrawler</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+<meta http-equiv="description" content="This is my page">
+
+<link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="./css/dashboard.css">
+<link rel="stylesheet" type="text/css" href="./css/style.css">
+<script type="text/javascript" src="./js/bootstrap.js"></script>
+<script type="text/javascript" src="./js/holder.min.js"></script>
+<script type="text/javascript" src="./js/ie-emulation-modes-warning.js"></script>
+<script type="text/javascript" src="./js/ie10-viewport-bug-workaround.js"></script>
+<script type="text/javascript" src="./js/jquery-1.11.3.js"></script>
+<script type="text/javascript" src="./js/jquery.timer.js"></script>
+<script type="text/javascript" src="./js/jquery.placeholder.min.js"></script>
+<script type="text/javascript" src="./js/jquery.xdomainrequest.min.js"></script>
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="#">DufeDataCrawler</a>
+		</div>
+	</div>
+	</nav>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-3 col-md-2 sidebar" style="background-color: black;">
+				<ul class="nav nav-sidebar">
+					<li class="active"><a href="index.jsp">Plugin <span class="sr-only">(current)</span></a></li>
+					<li><a href="files.jsp">Result</a></li>
+					<li><a href="log.jsp">Log</a></li>
+				</ul>
+			</div>
+			<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+				<h1 class="page-header">Dashboard</h1>
+				<hr />
+				<h2 class="sub-header">Plugins</h2>
+				<div class="table-responsive">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>Author</th>
+								<th>Version</th>
+								<th>Location</th>
+								<th>Status</th>
+								<th>Operations</th>
+								<th>Params</th>
+							</tr>
+						</thead>
+						<tbody>
+							<% 
               for(Plugin plugin:controller.getPlugins()){
                %>
-                <tr>
-                  <td><%=plugin.getPluginID() %></td>
-                  <td><%=plugin.getPluginAuthor() %></td>
-                  <td><%=plugin.getPluginVersion() %></td>
-                  <td>local</td>
-                  <td class="status" id="st_local_<%=plugin.getPluginID()%>"></td>
-                  <td><a class="operation" id="op_local_<%=plugin.getPluginID()%>" href="#">start</a> | <a href="readme.jsp?pluginID=<%=plugin.getPluginID()%>" target="_blank">readme</a></td>
-                  <td><input class="param" type="text" id="param_local_<%=plugin.getPluginID()%>"></input></td>
-                </tr>
-                <%
+							<tr>
+								<td><%=plugin.getPluginID() %></td>
+								<td><%=plugin.getPluginAuthor() %></td>
+								<td><%=plugin.getPluginVersion() %></td>
+								<td>local</td>
+								<td class="status" id="st_local_<%=plugin.getPluginID()%>"></td>
+								<td><a class="operation" id="op_local_<%=plugin.getPluginID()%>" href="#">start</a> | <a
+									href="readme.jsp?pluginID=<%=plugin.getPluginID()%>" target="_blank">readme</a></td>
+								<td><input class="param" type="text" id="param_local_<%=plugin.getPluginID()%>"></input></td>
+							</tr>
+							<%
                 }
                 %>
-                 <hr/>
-                <%
+							<hr />
+							<%
                 if(nodeController.getSelf().getRole()==NodeRole.MASTER)
                 {
                 for(Node slave : nodeController.getSlaves()){
@@ -101,33 +102,36 @@ NodeController nodeController=NodeController.getInstance();
                 	while(iterator.hasNext()){
                 	PluginBean pluginBean=slave.getPlugins().get(iterator.next());
                 %>
-                  <tr>
-                  <td><%=pluginBean.getPluginID() %></td>
-                  <td><%=pluginBean.getPluginAuthor() %></td>
-                  <td><%=pluginBean.getPluginVersion() %></td>
-                  <td><%=slave.getName() %></td>
-                  <td class="status" id="st_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></td>
-                  <td><a class="operation" id="op_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>" href="#">start</a> | <a href="readme.jsp?pluginID=<%=pluginBean.getPluginID()%>" target="_blank">readme</a></td>
-                  <td><input class="param" type="text" id="param_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></input></td>
-                </tr>
-               	<%
+							<tr>
+								<td><%=pluginBean.getPluginID() %></td>
+								<td><%=pluginBean.getPluginAuthor() %></td>
+								<td><%=pluginBean.getPluginVersion() %></td>
+								<td><%=slave.getName() %></td>
+								<td class="status" id="st_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></td>
+								<td><a class="operation" id="op_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"
+									href="#">start</a> | <a href="readme.jsp?pluginID=<%=pluginBean.getPluginID()%>"
+									target="_blank">readme</a></td>
+								<td><input class="param" type="text"
+									id="param_<%=slave.getName() %>_<%=pluginBean.getPluginID()%>"></input></td>
+							</tr>
+							<%
                   		}
                  	}
                  	}
                	}
                 %>
-              </tbody>
-            </table>
+						</tbody>
+					</table>
+				</div>
+				<div class="container-fluid">
+					<h2 class="sub-header">Log</h2>
+					<div id="log" style=" height:200px; overflow: scroll; background-color: black"></div>
+				</div>
+				<!-- #log-container -->
 			</div>
-			<div class="container-fluid">
-           <h2 class="sub-header">Log</h2>
-           <div  id="log" style=" height:200px; overflow: scroll; background-color: black">
-   			</div>
-			</div> <!-- #log-container -->
-			</div>
-        </div>
-    </div>
-  </body>
+		</div>
+	</div>
+</body>
 </html>
 
 <script type="text/javascript">

@@ -1,41 +1,17 @@
 package cn.edu.dufe.dufedata.util;
 
-import java.awt.List;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
-import java.util.Set;
-import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.JarInputStream;
-import java.util.jar.Manifest;
-
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.lang3.ClassPathUtils;
-import org.apache.commons.lang3.ClassUtils;
-import org.eclipse.jetty.util.resource.JarResource;
-import org.eclipse.jetty.webapp.JarScanner;
 import org.json.JSONObject;
-
 import cn.edu.dufe.dufedata.common.CommonConfig;
-import cn.edu.dufe.dufedata.plugin.IPlugin;
 import cn.edu.dufe.dufedata.plugin.Plugin;
 
 public class PluginLoader  {
@@ -52,6 +28,9 @@ public class PluginLoader  {
 				return false;
 			}
 		});
+		if (pluginFolders==null) {
+			return plugins;
+		}
 		//遍历每一个目录
 		for (int i = 0; i < pluginFolders.length; i++) {
 			//获取插件信息
