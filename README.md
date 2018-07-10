@@ -8,8 +8,10 @@
 - Distributed deployment over clusters
 - Enhancement based on [WebCollector](https://github.com/CrawlScript/WebCollector)
 ## Usage
-Fork the repository and add all libs into your classpath
-
+- Fork the repository and add all libs into your classpath
+- Develop your parsing logic by extends the Plugin class
+- Pack your plugin class as jar file, and add into the plugin path
+- Register your plugin in config file
 ---
 
 Note that The project has stopped maintenance
